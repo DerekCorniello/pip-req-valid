@@ -1,6 +1,8 @@
 package utils
 
 type Package struct {
-    Name    string
-    Version string
+	Name         string
+	VersionSpecs []string
+	Extras       string
+	EnvMarker    string
 }
