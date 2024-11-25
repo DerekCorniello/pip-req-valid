@@ -58,9 +58,14 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	}
 
 	// handles external packages
-	if strings.HasPrefix(line, "http") {
-		// TODO: May be an issue, can we find versions on external sites?
-		return utils.Package{}, nil
+	if strings.Contains(line, "http") {
+		re := regexp.MustCompile(`http.*`)
+		matches := re.FindStringSubmatch(line)
+		if matches == nil {
+			return utils.Package{},
+				fmt.Errorf("Error in regex operation finding http url in '%v'", line)
+		}
+		return utils.Package{Name: matches[0], VersionSpecs: []string{"url"}}, nil
 	}
 
 	// handles local refs
@@ -68,7 +73,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 		strings.HasPrefix(line, "/") ||
 		strings.HasSuffix(line, ".whl") {
 		// TODO: May be an issue, can we find versions of local files?
-		return utils.Package{}, nil
+		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
 	// regex to match name and optional extras [extras]
@@ -140,4 +145,17 @@ func ParseFile(filePath string) ([]utils.Package, error) {
 	wg.Wait()
 
 	return packages, nil
+}
+
+func VerifyFile(packages []utils.Package) ([]utils.Package, []utils.Package) {
+	var verifiedPackages, invalidPackages []utils.Package
+	for _, pkg := range packages {
+		if VerifyPackage(pkg) {
+			verifiedPackages = append(verifiedPackages, pkg)
+		} else {
+			invalidPackages = append(invalidPackages, pkg)
+		}
+	}
+
+	return verifiedPackages, invalidPackages
 }
