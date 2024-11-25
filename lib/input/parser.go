@@ -46,6 +46,11 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 		return utils.Package{}, nil
 	}
 
+    // comments can trail actual commands, split it here
+	if strings.Contains(line, "#") {
+		line = strings.Split(line, "#")[0]
+	}
+
 	// handles any of the reference or constraints tags, will
 	// print a message here to tell user to run the other file
 	// as well.
