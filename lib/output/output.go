@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DerekCorniello/pip-req-valid/input"
 	"github.com/DerekCorniello/pip-req-valid/utils"
 )
 
