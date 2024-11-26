@@ -46,7 +46,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 		return utils.Package{}, nil
 	}
 
-    // comments can trail actual commands, split it here
+	// comments can trail actual commands, split it here
 	if strings.Contains(line, "#") {
 		line = strings.Split(line, "#")[0]
 	}
@@ -119,12 +119,12 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 
 }
 
-func ParseFile(filePath string) ([]utils.Package, error) {
+func ParseFile(filePath string) ([]utils.Package, []error) {
 	var packages []utils.Package
 	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Printf("Failed to parse pip file: %v", err)
-		return packages, fmt.Errorf("Failed to parse pip file: %v", err)
+		return packages, []error{fmt.Errorf("Failed to parse pip file: %v", err)}
 	}
 
 	// scan the document and separate by newlines
@@ -137,22 +137,23 @@ func ParseFile(filePath string) ([]utils.Package, error) {
 	}
 
 	var packageList []utils.Package
+	var errList []error
 	var wg sync.WaitGroup
 	for _, pkg := range packageStrings {
 		wg.Add(1)
 		currPkg, err := parseLine(pkg, &wg)
 		if err != nil {
-			return packages, fmt.Errorf("An error occurred parsing package: %v", err)
+			errList = append(errList, fmt.Errorf("An error occurred parsing package: %v", err))
 		}
 		packageList = append(packageList, currPkg)
 	}
 
 	wg.Wait()
 
-	return packages, nil
+	return packages, errList
 }
 
-func VerifyFile(packages []utils.Package) ([]utils.Package, []utils.Package) {
+func VerifyPackages(packages []utils.Package) ([]utils.Package, []utils.Package) {
 	var verifiedPackages, invalidPackages []utils.Package
 	for _, pkg := range packages {
 		if VerifyPackage(pkg) {
