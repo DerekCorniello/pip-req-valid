@@ -55,11 +55,8 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	// print a message here to tell user to run the other file
 	// as well.
 	if strings.HasPrefix(line, "-") {
-		// TODO: should it just parse this file as well?
-		fmt.Printf(`Parsed an input with a tag reference to another
-                    file: %v.\nPlease run the file through the tool
-                    following this run through.`, line)
-		return utils.Package{}, nil
+		fmt.Printf("Parsed an input with a tag reference to another file: `%v`. Please run the file through the tool following this run.\n", line)
+		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
 	// handles external packages
@@ -70,14 +67,16 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 			return utils.Package{},
 				fmt.Errorf("Error in regex operation finding http url in '%v'", line)
 		}
-		return utils.Package{Name: matches[0], VersionSpecs: []string{"url"}}, nil
+		return utils.Package{Name: matches[0], VersionSpecs: []string{"latest", "url"}}, nil
 	}
 
 	// handles local refs
-	if strings.HasPrefix(line, "./") ||
+	if strings.HasPrefix(line, ".") ||
 		strings.HasPrefix(line, "/") ||
+		strings.HasPrefix(line, "..") ||
 		strings.HasSuffix(line, ".whl") {
-		// TODO: May be an issue, can we find versions of local files?
+
+		fmt.Printf("Cannot verify local file: `%v`\n", line)
 		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
@@ -86,7 +85,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	re := regexp.MustCompile(`^([a-zA-Z0-9_\-]+)(\[[^\]]*\])?`)
 	matches := re.FindStringSubmatch(line)
 	if matches == nil {
-		return utils.Package{}, fmt.Errorf("invalid format: '%s'", line)
+		return utils.Package{Name: "invalid"}, fmt.Errorf("invalid format: '%s'", line)
 	}
 
 	name := matches[1]
@@ -142,10 +141,14 @@ func ParseFile(filePath string) ([]utils.Package, []error) {
 	for _, pkg := range packageStrings {
 		wg.Add(1)
 		currPkg, err := parseLine(pkg, &wg)
-		if err != nil {
-			errList = append(errList, fmt.Errorf("An error occurred parsing package: %v", err))
+		// we dont need empty package names, those are comments or tag reqs
+		// or it is an errored package that will be handled
+		if currPkg.Name != "" {
+			if err != nil {
+				errList = append(errList, fmt.Errorf("An error occurred parsing package: %v", err))
+			}
+			packageList = append(packageList, currPkg)
 		}
-		packageList = append(packageList, currPkg)
 	}
 
 	wg.Wait()

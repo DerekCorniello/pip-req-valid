@@ -46,7 +46,7 @@ func VerifyPackage(pkg utils.Package) bool {
 		return false
 	}
 
-	if len(pkg.VersionSpecs) == 1 && pkg.VersionSpecs[0] == "latest" {
+	if slices.Contains(pkg.VersionSpecs, "latest") {
 
 		return len(versions) > 0
 	}
@@ -57,7 +57,8 @@ func VerifyPackage(pkg utils.Package) bool {
 			if slices.Contains(versions, targetVersion) {
 				return true
 			} else {
-				fmt.Printf("Specified version '%s' not found for package '%s'.\n", targetVersion, pkg.Name)
+				fmt.Printf("Specified version '%s' not found for package '%s'.\n",
+					targetVersion, pkg.Name)
 				return false
 			}
 		}

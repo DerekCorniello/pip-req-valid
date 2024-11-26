@@ -1,0 +1,11 @@
+# Base dependencies (referred via -r)
+-r base-requirements.txt
+
+# Local Python package (current directory)
+-e . 
+
+# Local directory as dependency
+../my-local-library/
+
+# Specific wheel file in a local path
+./dist/custom_package-1.0.0-py3-none-any.whl

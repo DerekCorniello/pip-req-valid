@@ -46,22 +46,22 @@ func createMessage(items []string, msgType MessageType) string {
 	case VerifiedPackages:
 		return fmt.Sprintf(
 			"Verified the following packages:\n%v",
-			strings.Join(items, ",\n"),
+			"\t"+strings.Join(items, ", "),
 		)
 	case ErrorPackages:
 		return fmt.Sprintf(
 			"Found %d error packages:\n%v",
 			len(items),
-			strings.Join(items, ",\n"),
+			"\t"+strings.Join(items, ", "),
 		)
 	case ProcessingErrors:
 		return fmt.Sprintf(
 			"Encountered %d processing errors:\n%v",
 			len(items),
-			strings.Join(items, ",\n"),
+			"\t"+strings.Join(items, ", "),
 		)
 	default:
-		return fmt.Sprintf("%v\nUnknown message type.")
+		return fmt.Sprintf("Unknown message type: %v", msgType)
 	}
 }
 
@@ -78,5 +78,8 @@ func GetPrettyOutput(verifiedPackages []utils.Package,
 	csErrs := extractStrings(errs,
 		func(err error) string { return err.Error() })
 
-	return fmt.Sprintf("%v\n%v\n%v", csVerPkgs, csErrPkgs, csErrs)
+	s := fmt.Sprintf("%v\n%v\n%v", createMessage(csVerPkgs, MessageType(VerifiedPackages)),
+		createMessage(csErrPkgs, MessageType(ErrorPackages)),
+		createMessage(csErrs, MessageType(ProcessingErrors)))
+	return s
 }

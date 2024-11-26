@@ -18,6 +18,7 @@ var testFiles []string = []string{
 	"tests/test9.txt",
 	"tests/test10.txt",
 	"tests/test11.txt",
+	"tests/test12.txt",
 }
 
 func TestParseAndVerifyRequirements(t *testing.T) {
