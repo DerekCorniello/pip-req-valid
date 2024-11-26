@@ -57,8 +57,8 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	if strings.HasPrefix(line, "-") {
 		// TODO: should it just parse this file as well?
 		fmt.Printf(`Parsed an input with a tag reference to another
-                    file: %v. Please run the file through the tool
-                    following this run through.`)
+                    file: %v.\nPlease run the file through the tool
+                    following this run through.`, line)
 		return utils.Package{}, nil
 	}
 
@@ -150,7 +150,7 @@ func ParseFile(filePath string) ([]utils.Package, []error) {
 
 	wg.Wait()
 
-	return packages, errList
+	return packageList, errList
 }
 
 func VerifyPackages(packages []utils.Package) ([]utils.Package, []utils.Package) {
@@ -162,6 +162,5 @@ func VerifyPackages(packages []utils.Package) ([]utils.Package, []utils.Package)
 			invalidPackages = append(invalidPackages, pkg)
 		}
 	}
-
 	return verifiedPackages, invalidPackages
 }
