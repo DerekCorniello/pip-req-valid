@@ -11,7 +11,6 @@ func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 		return nil, nil
 	}
 	url := fmt.Sprintf("https://pypi.org/pypi/%s/json", pkg.Name)
-	fmt.Printf("URL: %v\n\n", url)
 
 	// Perform HTTP GET request
 	resp, err := http.Get(url)
@@ -24,16 +23,15 @@ func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 	var packageInfo map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&packageInfo)
 	if err != nil {
-		fmt.Printf("Error parsing JSON response: %v\n", err)
-		fmt.Printf("JSON: %v\n\n", packageInfo)
+		fmt.Printf("Error parsing JSON response: %v\n%v\n", err, packageInfo)
 		return nil, err
 	}
 
 	// Extract the "releases" map
 	releases, ok := packageInfo["releases"].(map[string]interface{})
 	if !ok {
-		fmt.Println("Error: 'releases' field is missing or malformed")
-		return nil, fmt.Errorf("missing or malformed 'releases' field")
+		fmt.Println("Error: Package was not found.")
+		return nil, fmt.Errorf("Package with specified version was not found.")
 	}
 
 	// Collect the versions (keys of the "releases" map)
