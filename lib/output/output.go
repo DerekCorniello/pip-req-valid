@@ -46,19 +46,19 @@ func createMessage(items []string, msgType MessageType) string {
 	case VerifiedPackages:
 		return fmt.Sprintf(
 			"Verified the following packages:\n%v",
-			"\t"+strings.Join(items, ", "),
+			"        "+strings.Join(items, ", "),
 		)
 	case ErrorPackages:
 		return fmt.Sprintf(
 			"Found %d error packages:\n%v",
 			len(items),
-			"\t"+strings.Join(items, ", "),
+			"        "+strings.Join(items, ", "),
 		)
 	case ProcessingErrors:
 		return fmt.Sprintf(
 			"Encountered %d processing errors:\n%v",
 			len(items),
-			"\t"+strings.Join(items, ", "),
+			"        "+strings.Join(items, ", "),
 		)
 	default:
 		return fmt.Sprintf("Unknown message type: %v", msgType)

@@ -55,7 +55,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	// print a message here to tell user to run the other file
 	// as well.
 	if strings.HasPrefix(line, "-") {
-		fmt.Printf("Parsed an input with a tag reference to another file: `%v`. Please run the file through the tool following this run.\n", line)
+		fmt.Printf("Parsed an input with a tag reference to another file: %v. Please run the file through the tool following this run.\n", line)
 		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
@@ -76,7 +76,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 		strings.HasPrefix(line, "..") ||
 		strings.HasSuffix(line, ".whl") {
 
-		fmt.Printf("Cannot verify local file: `%v`\n", line)
+		fmt.Printf("Cannot verify local file: %v\n", line)
 		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 

@@ -41,7 +41,7 @@ func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 		// Extract the "releases" map
 		releases, ok := packageInfo["releases"].(map[string]interface{})
 		if !ok {
-			fmt.Printf("Error: Package `%v` was not found.", pkg)
+			fmt.Printf("Error: Package %v was not found.", pkg)
 			return nil, fmt.Errorf("Package with specified version was not found.")
 		}
 
