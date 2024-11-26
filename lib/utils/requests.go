@@ -1,7 +1,5 @@
 package utils
 
-// https://pypi.org/pypi/<package name>/<version>/json
-
 import (
 	"encoding/json"
 	"fmt"
@@ -9,35 +7,37 @@ import (
 )
 
 func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
-	url := fmt.Sprintf(
-		"https://pypi.org/pypi/%s/json",
-		pkg.Name,
-	)
+	if pkg.Name == "" {
+		return nil, nil
+	}
+	url := fmt.Sprintf("https://pypi.org/pypi/%s/json", pkg.Name)
+	fmt.Printf("URL: %v\n\n", url)
+
+	// Perform HTTP GET request
 	resp, err := http.Get(url)
-	var versions []string
 	if err != nil {
 		fmt.Printf("An error occurred: %v\n", err)
-		return versions, err
+		return nil, err
 	}
-	defer resp.Body.Close() // close the network connection after reading
+	defer resp.Body.Close() // Ensure the response body is closed
 
-    // create an empty map that maps from string to an empty interface
-    // allows for flexibility in the structure of the HTTP responses
 	var packageInfo map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&packageInfo)
-
 	if err != nil {
-		fmt.Printf("Error parsing JSON response: %v", err)
-		return versions, err
+		fmt.Printf("Error parsing JSON response: %v\n", err)
+		fmt.Printf("JSON: %v\n\n", packageInfo)
+		return nil, err
 	}
 
-	// Extract versions from the releases map
+	// Extract the "releases" map
 	releases, ok := packageInfo["releases"].(map[string]interface{})
 	if !ok {
 		fmt.Println("Error: 'releases' field is missing or malformed")
-		return versions, fmt.Errorf("missing or malformed 'releases' field")
+		return nil, fmt.Errorf("missing or malformed 'releases' field")
 	}
 
+	// Collect the versions (keys of the "releases" map)
+	var versions []string
 	for version := range releases {
 		versions = append(versions, version)
 	}

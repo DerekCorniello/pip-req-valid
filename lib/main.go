@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	filepath := "./tests/test1.txt"
+	filepath := "./tests/test8.txt"
 	pkgs, errs := input.ParseFile(filepath)
 	verPkgs, invPkgs := input.VerifyPackages(pkgs)
 	fmt.Printf(output.GetPrettyOutput(verPkgs, invPkgs, errs))
