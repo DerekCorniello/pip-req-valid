@@ -8,28 +8,6 @@ import (
 	"net/http"
 )
 
-func PackageVersionExists(pkg *Package) (bool, error) {
-	url := fmt.Sprintf(
-		"https://pypi.org/pypi/%s/%s/json",
-		pkg.Name,
-		pkg.Version,
-	)
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Printf("An error occurred: %s\n", err)
-		return false, err
-	}
-	defer resp.Body.Close() // close the network connection after reading
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("PyPi returned an non-OK code for package `%s`: %v\n",
-			pkg.Name,
-			resp.StatusCode)
-		return false, nil
-	}
-	return true, nil
-}
-
 func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 	url := fmt.Sprintf(
 		"https://pypi.org/pypi/%s/json",

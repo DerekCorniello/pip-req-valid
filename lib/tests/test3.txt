@@ -1,0 +1,6 @@
+requests==2.28.1
+flask==2.2.2
+# Custom package from GitHub
+git+https://github.com/username/special-package.git@v1.0.0#egg=special-package
+# Private package hosted in internal repository
+private-package==0.1.0
