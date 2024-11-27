@@ -5,10 +5,26 @@
     </header>
     <main>
       <FileDrop @file-submitted="handleFileSubmission" />
+      <div class="options">
+        <label>
+          <input type="checkbox" v-model="runDockerInstall" />
+          Run Docker installation validation (this may take extra time)
+        </label>
+      </div>
       <div class="output-container">
         <div v-if="loading" class="loading-spinner"></div>
         <div v-else-if="output" class="output">
-          {{ output }}
+          <div>
+            <h2>Validation Results:</h2>
+            <pre>{{ output }}</pre>
+            <div v-if="details">
+              <h3>Additional Details:</h3>
+              <pre>{{ details }}</pre>
+            </div>
+          </div>
+        </div>
+        <div v-if="dockerInfo">
+          <p><strong>Note:</strong> Docker validation install is in progress. This will take extra time.</p>
         </div>
       </div>
     </main>
@@ -26,18 +42,23 @@ export default {
     return {
       loading: false,
       output: null,
+      details: null,
+      runDockerInstall: false, // flag for Docker installation
+      dockerInfo: false, // show additional info about Docker processing
     };
   },
   methods: {
     async handleFileSubmission(file) {
       this.loading = true;
       this.output = null;
+      this.dockerInfo = false;
+      this.details = null;
 
       try {
         const formData = new FormData();
         formData.append("file", file);
-        
-        // Need to edit this when I get to it...
+        formData.append("runDockerInstall", this.runDockerInstall); // Send the flag
+
         const response = await fetch("backendservice", {
           method: "POST",
           body: formData,
@@ -47,6 +68,11 @@ export default {
           const jsonResponse = await response.json();
           this.output = jsonResponse.prettyOutput;
           this.details = jsonResponse.details;
+
+          // If Docker install is requested, show progress message
+          if (this.runDockerInstall) {
+            this.dockerInfo = true;
+          }
         } else {
           this.output = "Error validating the file. Please try again.";
         }
@@ -60,7 +86,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -85,6 +111,11 @@ header h1 {
 main {
   width: 100%;
   max-width: 600px;
+}
+
+.options {
+  margin-top: 20px;
+  font-size: 14px;
 }
 
 .output-container {
