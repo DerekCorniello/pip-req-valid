@@ -44,7 +44,9 @@ export default {
         });
 
         if (response.ok) {
-          this.output = await response.text();
+          const jsonResponse = await response.json();
+          this.output = jsonResponse.prettyOutput;
+          this.details = jsonResponse.details;
         } else {
           this.output = "Error validating the file. Please try again.";
         }

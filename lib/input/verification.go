@@ -22,27 +22,27 @@ func parseVersionSpecifier(spec string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid version specifier: %s", spec)
 }
 
-func versionMatchesConstraint(version, operator, constraint string) bool {
+func versionMatchesConstraint(version, operator, constraint string, details *[]string) bool {
 	parsedVersion, err := semver.NewVersion(version)
 	if err != nil {
-		fmt.Printf("Invalid version format: %s\n", version)
+		*details = append(*details, fmt.Sprintf("Invalid version format: %s\n", version))
 		return false
 	}
 
 	parsedConstraint, err := semver.NewConstraint(fmt.Sprintf("%s %s", operator, constraint))
 	if err != nil {
-		fmt.Printf("Invalid version constraint: %s %s\n", operator, constraint)
+		*details = append(*details, fmt.Sprintf("Invalid version constraint: %s %s\n", operator, constraint))
 		return false
 	}
 
 	return parsedConstraint.Check(parsedVersion)
 }
 
-func VerifyPackage(pkg utils.Package) bool {
+func VerifyPackage(pkg utils.Package, details *[]string) bool {
 
-	versions, err := utils.GetAllowedPackageVersions(&pkg)
+	versions, err := utils.GetAllowedPackageVersions(&pkg, details)
 	if err != nil {
-		fmt.Printf("An error occurred while retrieving allowed package versions: %v\n", err)
+		*details = append(*details, fmt.Sprintf("An error occurred while retrieving allowed package versions: %v\n", err))
 		return false
 	}
 
@@ -57,8 +57,7 @@ func VerifyPackage(pkg utils.Package) bool {
 			if slices.Contains(versions, targetVersion) {
 				return true
 			} else {
-				fmt.Printf("Specified version '%s' not found for package '%s'.\n",
-					targetVersion, pkg.Name)
+				*details = append(*details, fmt.Sprintf("Specified version '%s' not found for package '%s'.\n", targetVersion, pkg.Name))
 				return false
 			}
 		}
@@ -69,12 +68,12 @@ func VerifyPackage(pkg utils.Package) bool {
 		for _, spec := range pkg.VersionSpecs {
 			op, targetVersion, parseErr := parseVersionSpecifier(spec)
 			if parseErr != nil {
-				fmt.Printf("Error parsing version specifier '%s': %v\n", spec, parseErr)
+				*details = append(*details, fmt.Sprintf("Error parsing version specifier '%s': %v\n", spec, parseErr))
 				versionValid = false
 				break
 			}
 
-			if !versionMatchesConstraint(version, op, targetVersion) {
+			if !versionMatchesConstraint(version, op, targetVersion, details) {
 				versionValid = false
 				break
 			}

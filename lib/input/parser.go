@@ -11,32 +11,7 @@ import (
 	utils "github.com/DerekCorniello/pip-req-valid/utils"
 )
 
-/*
-requirements.txt example:
-
-# This is a comment, to show how #-prefixed lines are ignored.
-# It is possible to specify requirements as plain names.
-pytest
-pytest-cov
-beautifulsoup4
-
-# The syntax supported here is the same as that of requirement specifiers.
-docopt == 0.6.1
-requests [security] >= 2.8.1, == 2.8.* ; python_version < "2.7"
-urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip
-
-# It is possible to refer to other requirement files or constraints files.
--r other-requirements.txt
--c constraints.txt
-
-# It is possible to refer to specific local distribution paths.
-./downloads/numpy-1.9.2-cp34-none-win32.whl
-
-# It is possible to refer to URLs.
-http://wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev1820+49a8884-cp34-none-win_amd64.whl
-*/
-
-func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
+func parseLine(line string, details *[]string, wg *sync.WaitGroup) (utils.Package, error) {
 
 	defer wg.Done()
 
@@ -55,7 +30,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 	// print a message here to tell user to run the other file
 	// as well.
 	if strings.HasPrefix(line, "-") {
-		fmt.Printf("Parsed an input with a tag reference to another file: %v. Please run the file through the tool following this run.\n", line)
+		*details = append(*details, fmt.Sprintf("Parsed an input with a tag reference to another file: %v. Please run the file through the tool following this run.\n", line))
 		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
@@ -76,7 +51,7 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 		strings.HasPrefix(line, "..") ||
 		strings.HasSuffix(line, ".whl") {
 
-		fmt.Printf("Cannot verify local file: %v\n", line)
+		*details = append(*details, fmt.Sprintf("Cannot verify local file: %v\n", line))
 		return utils.Package{Name: line, VersionSpecs: []string{"local"}}, nil
 	}
 
@@ -132,10 +107,11 @@ func ParseFile(fileContent []byte) ([]utils.Package, []error) {
 
 	var packageList []utils.Package
 	var errList []error
+	var details []string
 	var wg sync.WaitGroup
 	for _, pkg := range packageStrings {
 		wg.Add(1)
-		currPkg, err := parseLine(pkg, &wg)
+		currPkg, err := parseLine(pkg, &details, &wg)
 		// we don't need empty package names, those are comments or tag reqs
 		// or it is an errored package that will be handled
 		if currPkg.Name != "" {
@@ -151,14 +127,15 @@ func ParseFile(fileContent []byte) ([]utils.Package, []error) {
 	return packageList, errList
 }
 
-func VerifyPackages(packages []utils.Package) ([]utils.Package, []utils.Package) {
+func VerifyPackages(packages []utils.Package) ([]utils.Package, []utils.Package, []string) {
 	var verifiedPackages, invalidPackages []utils.Package
+	details := []string{}
 	for _, pkg := range packages {
-		if VerifyPackage(pkg) {
+		if VerifyPackage(pkg, &details) {
 			verifiedPackages = append(verifiedPackages, pkg)
 		} else {
 			invalidPackages = append(invalidPackages, pkg)
 		}
 	}
-	return verifiedPackages, invalidPackages
+	return verifiedPackages, invalidPackages, details
 }

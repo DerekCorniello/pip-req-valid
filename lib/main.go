@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -13,9 +14,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-// Lambda handler to process the file
 func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Check if it's multipart/form-data
 	contentType := request.Headers["Content-Type"]
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
 		return events.APIGatewayProxyResponse{
@@ -24,7 +23,6 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		}, nil
 	}
 
-	// Parse the multipart form data
 	fileContent, err := parseMultipartForm(request.Body, request.Headers["Content-Type"])
 	if err != nil {
 		log.Println("Error parsing form data:", err)
@@ -34,17 +32,26 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		}, nil
 	}
 
-	// Use the existing ParseFile function with the file content
 	pkgs, errs := input.ParseFile(fileContent)
-	verPkgs, invPkgs := input.VerifyPackages(pkgs)
 
-	// Get the formatted output
-	prettyOutput := output.GetPrettyOutput(verPkgs, invPkgs, errs)
+	errList := []string{}
+	for _, err := range errs {
+        errList = append(errList, err.Error())
+	}
 
-	// Return the output as JSON (frontend expects this)
+	verPkgs, invPkgs, details := input.VerifyPackages(pkgs)
+
+	response := map[string]interface{}{
+		"prettyOutput": output.GetPrettyOutput(verPkgs, invPkgs, errs), // formatted output
+		"details":      strings.Join(details, "\n"),                    // logs of the process
+		"errors":       strings.Join(errList, "\n"),                    // errors occurred during processing
+	}
+
+	jsonResponse, _ := json.Marshal(response)
+
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
-		Body:       fmt.Sprintf("{\"output\": \"%s\"}", prettyOutput),
+		Body:       string(jsonResponse),
 		Headers:    map[string]string{"Content-Type": "application/json"},
 	}, nil
 }

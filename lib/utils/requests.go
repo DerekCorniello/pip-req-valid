@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
+func GetAllowedPackageVersions(pkg *Package, details *[]string) ([]string, error) {
 	if pkg.Name == "" {
 		return nil, nil
 	} else if slices.Contains(pkg.VersionSpecs, "local") {
@@ -24,7 +24,7 @@ func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 	// Perform HTTP GET request
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("An error occurred: %v\n", err)
+		*details = append(*details, fmt.Sprintf("An error occurred: %v\n", err))
 		return nil, err
 	}
 	defer resp.Body.Close() // Ensure the response body is closed
@@ -34,14 +34,14 @@ func GetAllowedPackageVersions(pkg *Package) ([]string, error) {
 		var packageInfo map[string]interface{}
 		err = json.NewDecoder(resp.Body).Decode(&packageInfo)
 		if err != nil {
-			fmt.Printf("Error parsing JSON response: %v\n%v\n", err, packageInfo)
+			*details = append(*details, fmt.Sprintf("Error parsing JSON response: %v\n%v\n", err, packageInfo))
 			return nil, err
 		}
 
 		// Extract the "releases" map
 		releases, ok := packageInfo["releases"].(map[string]interface{})
 		if !ok {
-			fmt.Printf("Error: Package %v was not found.", pkg)
+			*details = append(*details, fmt.Sprintf("Error: Package %v was not found.", pkg))
 			return nil, fmt.Errorf("Package with specified version was not found.")
 		}
 
