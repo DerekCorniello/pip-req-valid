@@ -69,7 +69,7 @@ func TestParseAndVerifyRequirements(t *testing.T) {
 				log.Fatalf("Failed to read file: %v", err)
 			}
 			pkgs, errs := input.ParseFile(fileContent)
-			verPkgs, invPkgs := input.VerifyPackages(pkgs)
+			verPkgs, invPkgs, _ := input.VerifyPackages(pkgs)
 			actualOutput := output.GetPrettyOutput(verPkgs, invPkgs, errs)
 			if actualOutput != expectedOutput {
 				t.Errorf("Output mismatch for %s\nExpected:\n%s\nGot:\n%s", fileName, expectedOutput, actualOutput)
@@ -105,5 +105,29 @@ Testing chars found in req files:
 \{["''"]}=><*`
 	if string(fileContent) != expectedContent {
 		t.Errorf("Expected file content: %s, got: %s", expectedContent, string(fileContent))
+	}
+}
+
+func TestDockerCreation(t *testing.T) {
+	// passing case:
+	requirementsFile := "./tests/test1.txt"
+	requirements, err := os.ReadFile(requirementsFile)
+	if err != nil {
+		log.Fatalf("Failed to read requirements file: %v", err)
+	}
+	_, err = RunDockerInstall(requirements)
+	if err != nil {
+		log.Fatalf("Docker install failed: %v", err)
+	}
+
+	// failing case:
+	requirementsFile = "./tests/test12.txt"
+	requirements, err = os.ReadFile(requirementsFile)
+	if err != nil {
+		log.Fatalf("Failed to read requirements file: %v", err)
+	}
+	_, err = RunDockerInstall(requirements)
+	if err == nil {
+		log.Fatalf("Docker install failed (this install should have failed): %v", err)
 	}
 }

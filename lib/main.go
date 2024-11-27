@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"mime/multipart"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/DerekCorniello/pip-req-valid/input"
@@ -13,6 +15,29 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
+
+func RunDockerInstall(requirements []byte) (string, error) {
+	// save the file temporarily
+	tmpFile, err := os.CreateTemp("", "requirements-*.txt")
+	if err != nil {
+		return "", fmt.Errorf("could not create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// write the requirements.txt content to the temporary file
+	_, err = tmpFile.Write(requirements)
+	if err != nil {
+		return "", fmt.Errorf("could not write to temp file: %v", err)
+	}
+
+	cmd := exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/app/requirements.txt", tmpFile.Name()), "python:3.11-slim", "pip", "install", "--no-cache-dir", "-r", "/app/requirements.txt")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("docker install failed: %v\n%s", err, string(output))
+	}
+
+	return string(output), nil
+}
 
 func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	contentType := request.Headers["Content-Type"]
@@ -36,14 +61,14 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 
 	errList := []string{}
 	for _, err := range errs {
-        errList = append(errList, err.Error())
+		errList = append(errList, err.Error())
 	}
 
 	verPkgs, invPkgs, details := input.VerifyPackages(pkgs)
 
 	response := map[string]interface{}{
 		"prettyOutput": output.GetPrettyOutput(verPkgs, invPkgs, errs), // formatted output
-		"details":      strings.Join(details, "\n"),                    // logs of the process
+		"details":      strings.Join(details, "\n"),                    // details of the process
 		"errors":       strings.Join(errList, "\n"),                    // errors occurred during processing
 	}
 
@@ -56,12 +81,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 	}, nil
 }
 
-// Helper function to parse the multipart form and extract the file content
 func parseMultipartForm(body, contentType string) ([]byte, error) {
-	// Parse the multipart form using the boundary in the content type header
-	// Extract the file content from the form-data
-	// Create a new reader to handle the multipart data
-
 	// Find the boundary in the content-type header
 	// Content-Type looks like "multipart/form-data; boundary=---boundary"
 	parts := strings.Split(contentType, "boundary=")
@@ -70,29 +90,25 @@ func parseMultipartForm(body, contentType string) ([]byte, error) {
 	}
 	boundary := parts[1]
 
-	// Create a reader to read from the multipart form body
+	// create a reader to read from the multipart form body
 	reader := multipart.NewReader(strings.NewReader(body), boundary)
 
-	// Read the form data
 	form, err := reader.ReadForm(10 << 20) // 10 MB limit for the form data
 	if err != nil {
 		return nil, err
 	}
 
-	// Extract the file content from the form data
-	files, ok := form.File["file"] // assuming the file is passed with the key "file"
+	files, ok := form.File["file"]
 	if !ok || len(files) == 0 {
 		return nil, fmt.Errorf("no file found in form data")
 	}
 
-	// Now extract the file
-	file, err := files[0].Open() // Open the first file in the list
+	file, err := files[0].Open()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open the file: %v", err)
 	}
 	defer file.Close()
 
-	// Read the content of the uploaded file
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the file: %v", err)
