@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -108,26 +109,43 @@ Testing chars found in req files:
 	}
 }
 
-func TestDockerCreation(t *testing.T) {
-	// passing case:
-	requirementsFile := "./tests/test1.txt"
-	requirements, err := os.ReadFile(requirementsFile)
-	if err != nil {
-		log.Fatalf("Failed to read requirements file: %v", err)
-	}
-	_, err = RunDockerInstall(requirements)
-	if err != nil {
-		log.Fatalf("Docker install failed: %v", err)
-	}
+func TestDockerCreationPass(t *testing.T) {
+	files := []string{"1", "4", "5", "6", "7", "8", "9", "11"}
+	t.Run("Passing cases", func(t *testing.T) {
+		for _, fileStr := range files {
+			t.Run(fmt.Sprintf("TestFile_%s", fileStr), func(t *testing.T) {
+				t.Parallel()
 
-	// failing case:
-	requirementsFile = "./tests/test12.txt"
-	requirements, err = os.ReadFile(requirementsFile)
-	if err != nil {
-		log.Fatalf("Failed to read requirements file: %v", err)
-	}
-	_, err = RunDockerInstall(requirements)
-	if err == nil {
-		log.Fatalf("Docker install failed (this install should have failed): %v", err)
-	}
+				requirementsFile := fmt.Sprintf("./tests/test%v.txt", fileStr)
+				requirements, err := os.ReadFile(requirementsFile)
+				if err != nil {
+					t.Fatalf("Failed to read requirements file: %v", err)
+				}
+				_, err = RunDockerInstall(requirements)
+				if err != nil {
+					t.Fatalf("Docker install failed: %v", err)
+				}
+			})
+		}
+	})
+}
+func TestDockerCreationFail(t *testing.T) {
+	files := []string{"2", "3", "10", "12"}
+	t.Run("Failing cases", func(t *testing.T) {
+		for _, fileStr := range files {
+			t.Run(fmt.Sprintf("TestFile_%s", fileStr), func(t *testing.T) {
+				t.Parallel()
+
+				requirementsFile := fmt.Sprintf("./tests/test%v.txt", fileStr)
+				requirements, err := os.ReadFile(requirementsFile)
+				if err != nil {
+					t.Fatalf("Failed to read requirements file: %v", err)
+				}
+				_, err = RunDockerInstall(requirements)
+				if err == nil {
+					t.Fatalf("Docker install failed (this install should have failed): %v", err)
+				}
+			})
+		}
+	})
 }
