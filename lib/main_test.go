@@ -1,9 +1,9 @@
 package main
 
 import (
+	"log"
 	"os"
 	"testing"
-    "log"
 
 	"github.com/DerekCorniello/pip-req-valid/input"
 	"github.com/DerekCorniello/pip-req-valid/output"
@@ -75,5 +75,35 @@ func TestParseAndVerifyRequirements(t *testing.T) {
 				t.Errorf("Output mismatch for %s\nExpected:\n%s\nGot:\n%s", fileName, expectedOutput, actualOutput)
 			}
 		})
+	}
+}
+
+func TestParseMultipartForm(t *testing.T) {
+	// Example of multipart-form data
+	body := `--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file content.
+Tested newline.
+Testing chars found in req files:
+\{["''"]}=><*
+--boundary--`
+
+	contentType := "multipart/form-data; boundary=boundary"
+
+	// Simulate calling parseMultipartForm
+	fileContent, err := parseMultipartForm(body, contentType)
+	if err != nil {
+		t.Errorf("Failed to parse multipart form: %v", err)
+	}
+
+	// Validate the file content is as expected
+	expectedContent := `This is a test file content.
+Tested newline.
+Testing chars found in req files:
+\{["''"]}=><*`
+	if string(fileContent) != expectedContent {
+		t.Errorf("Expected file content: %s, got: %s", expectedContent, string(fileContent))
 	}
 }
