@@ -5,6 +5,11 @@
     </header>
     <main>
       <FileDrop @file-submitted="handleFileSubmission" />
+      <h4>How does it work?</h4>
+      <p>The program will parse out your requirements file and access APIs to ensure the versions are good.
+      If your file's versions are verified, the program will pip install your requirements file in a separate
+      environment, ensuring that the requirements are all packaged together in your file. This process will take
+      a few minutes depending on how large your requirements file is.</p>
       <div class="output-container">
         <div v-if="loading" class="loading-spinner"></div>
         <div v-else-if="output" class="output">
