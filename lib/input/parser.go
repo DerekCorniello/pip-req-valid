@@ -2,8 +2,8 @@ package input
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -118,17 +118,12 @@ func parseLine(line string, wg *sync.WaitGroup) (utils.Package, error) {
 
 }
 
-func ParseFile(filePath string) ([]utils.Package, []error) {
-	var packages []utils.Package
-	file, err := os.Open(filePath)
-	if err != nil {
-		fmt.Printf("Failed to parse pip file: %v", err)
-		return packages, []error{fmt.Errorf("Failed to parse pip file: %v", err)}
-	}
+func ParseFile(fileContent []byte) ([]utils.Package, []error) {
 
-	// scan the document and separate by newlines
-	scanner := bufio.NewScanner(file)
+	reader := bytes.NewReader(fileContent)
+	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
+
 	var packageStrings []string
 
 	for scanner.Scan() {
@@ -141,7 +136,7 @@ func ParseFile(filePath string) ([]utils.Package, []error) {
 	for _, pkg := range packageStrings {
 		wg.Add(1)
 		currPkg, err := parseLine(pkg, &wg)
-		// we dont need empty package names, those are comments or tag reqs
+		// we don't need empty package names, those are comments or tag reqs
 		// or it is an errored package that will be handled
 		if currPkg.Name != "" {
 			if err != nil {
