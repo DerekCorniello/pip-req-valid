@@ -48,6 +48,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
             Headers: map[string]string{
                 "Access-Control-Allow-Origin": "https://reqinspect.com",
                 "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
             },
 		}, nil
 	}
@@ -61,6 +62,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
             Headers: map[string]string{
                 "Access-Control-Allow-Origin": "https://reqinspect.com",
                 "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
             },
 		}, nil
 	}
@@ -88,6 +90,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
         Headers: map[string]string{
             "Access-Control-Allow-Origin": "https://reqinspect.com",
             "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
         },
 	}, nil
 }
