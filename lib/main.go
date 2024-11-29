@@ -45,6 +45,10 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       "Expected multipart/form-data",
+            Headers: map[string]string{
+                "Access-Control-Allow-Origin": "https://yourfrontendurl.com", // Or "*"
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
 		}, nil
 	}
 
@@ -54,6 +58,10 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       "Error parsing file content",
+            Headers: map[string]string{
+                "Access-Control-Allow-Origin": "https://yourfrontendurl.com", // Or "*"
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
 		}, nil
 	}
 
@@ -77,7 +85,10 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body:       string(jsonResponse),
-		Headers:    map[string]string{"Content-Type": "application/json"},
+        Headers: map[string]string{
+            "Access-Control-Allow-Origin": "https://yourfrontendurl.com", // Or "*"
+            "Access-Control-Allow-Headers": "Content-Type",
+        },
 	}, nil
 }
 
