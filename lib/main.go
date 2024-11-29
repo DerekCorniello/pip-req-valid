@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
+	"mime/multipart"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/DerekCorniello/pip-req-valid/input"
 	"github.com/DerekCorniello/pip-req-valid/output"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func RunDockerInstall(requirements []byte) (string, error) {
@@ -37,24 +39,32 @@ func RunDockerInstall(requirements []byte) (string, error) {
 	return string(output), nil
 }
 
-func handleFileUpload(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "https://reqinspect.com")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-
-	// Check if the content type is multipart/form-data
-	contentType := r.Header.Get("Content-Type")
+func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	contentType := request.Headers["Content-Type"]
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
-		http.Error(w, "Expected multipart/form-data", http.StatusBadRequest)
-		return
+		return events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       "Expected multipart/form-data",
+            Headers: map[string]string{
+                "Access-Control-Allow-Origin": "https://reqinspect.com",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+            },
+		}, nil
 	}
 
-	fileContent, err := parseMultipartForm(r)
+	fileContent, err := parseMultipartForm(request.Body, request.Headers["Content-Type"])
 	if err != nil {
 		log.Println("Error parsing form data:", err)
-		http.Error(w, "Error parsing file content", http.StatusBadRequest)
-		return
+		return events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       "Error parsing file content",
+            Headers: map[string]string{
+                "Access-Control-Allow-Origin": "https://reqinspect.com",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+            },
+		}, nil
 	}
 
 	pkgs, errs := input.ParseFile(fileContent)
@@ -74,42 +84,54 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, _ := json.Marshal(response)
 
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Body:       string(jsonResponse),
+        Headers: map[string]string{
+            "Access-Control-Allow-Origin": "https://reqinspect.com",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+        },
+	}, nil
 }
 
-func parseMultipartForm(r *http.Request) ([]byte, error) {
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+func parseMultipartForm(body, contentType string) ([]byte, error) {
+	// Find the boundary in the content-type header
+	// Content-Type looks like "multipart/form-data; boundary=---boundary"
+	parts := strings.Split(contentType, "boundary=")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("Invalid content type, boundary not found")
+	}
+	boundary := parts[1]
+
+	// create a reader to read from the multipart form body
+	reader := multipart.NewReader(strings.NewReader(body), boundary)
+
+	form, err := reader.ReadForm(10 << 20) // 10 MB limit for the form data
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse form: %v", err)
+		return nil, err
 	}
 
-	files := r.MultipartForm.File["file"]
-	if len(files) == 0 {
+	files, ok := form.File["file"]
+	if !ok || len(files) == 0 {
 		return nil, fmt.Errorf("no file found in form data")
 	}
 
 	file, err := files[0].Open()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %v", err)
+		return nil, fmt.Errorf("failed to open the file: %v", err)
 	}
 	defer file.Close()
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file content: %v", err)
+		return nil, fmt.Errorf("failed to read the file: %v", err)
 	}
 
 	return fileContent, nil
 }
 
 func main() {
-	// Set up the HTTP server
-	http.HandleFunc("/upload", handleFileUpload)
-
-	err := http.ListenAndServe(":443", nil)
-
-	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
-	}
+	// Start the Lambda handler
+	lambda.Start(HandleRequest)
 }
