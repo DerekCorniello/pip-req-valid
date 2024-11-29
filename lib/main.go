@@ -16,24 +16,17 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func RunDockerInstall(requirements []byte) (string, error) {
-	// save the file temporarily
-	tmpFile, err := os.CreateTemp("", "requirements-*.txt")
+func RunEFSInstall(requirements []byte) (string, error) {
+	efsMountPath := "/requirements.txt"
+	err := os.WriteFile(efsMountPath, requirements, 0644)
 	if err != nil {
-		return "", fmt.Errorf("could not create temp file: %v", err)
-	}
-	defer os.Remove(tmpFile.Name())
-
-	// write the requirements.txt content to the temporary file
-	_, err = tmpFile.Write(requirements)
-	if err != nil {
-		return "", fmt.Errorf("could not write to temp file: %v", err)
+		return "", fmt.Errorf("could not write to EFS: %v", err)
 	}
 
-	cmd := exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/app/requirements.txt", tmpFile.Name()), "python:3.11-slim", "pip", "install", "--no-cache-dir", "-r", "/app/requirements.txt")
+	cmd := exec.Command("pip", "install", "--no-cache-dir", "--dry-run", "-r", efsMountPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("docker install failed: %v\n%s", err, string(output))
+		return "", fmt.Errorf("pip install failed: %v\n%s", err, string(output))
 	}
 
 	return string(output), nil
@@ -45,25 +38,26 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       "Expected multipart/form-data",
-            Headers: map[string]string{
-                "Access-Control-Allow-Origin": "https://reqinspect.com",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-            },
+			Headers: map[string]string{
+				"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
+				"Access-Control-Allow-Headers": "Content-Type",
+				"Access-Control-Allow-Methods": "POST, OPTIONS",
+			},
 		}, nil
 	}
 
+	// Parse the file content from the multipart form data
 	fileContent, err := parseMultipartForm(request.Body, request.Headers["Content-Type"])
 	if err != nil {
 		log.Println("Error parsing form data:", err)
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       "Error parsing file content",
-            Headers: map[string]string{
-                "Access-Control-Allow-Origin": "https://reqinspect.com",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-            },
+			Headers: map[string]string{
+				"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
+				"Access-Control-Allow-Headers": "Content-Type",
+				"Access-Control-Allow-Methods": "POST, OPTIONS",
+			},
 		}, nil
 	}
 
@@ -76,22 +70,29 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 
 	verPkgs, invPkgs, details := input.VerifyPackages(pkgs)
 
+	installOutput, installErr := RunEFSInstall(fileContent)
+	if installErr != nil {
+		errList = append(errList, installErr.Error())
+	}
+
 	response := map[string]interface{}{
-		"prettyOutput": output.GetPrettyOutput(verPkgs, invPkgs, errs), // formatted output
-		"details":      strings.Join(details, "\n"),                    // details of the process
-		"errors":       strings.Join(errList, "\n"),                    // errors occurred during processing
+		"prettyOutput":  output.GetPrettyOutput(verPkgs, invPkgs, errs), // formatted output
+		"details":       strings.Join(details, "\n"),                    // details of the process
+		"errors":        strings.Join(errList, "\n"),                    // errors occurred during processing
+		"installOutput": installOutput,                                  // test install output
 	}
 
 	jsonResponse, _ := json.Marshal(response)
 
+	// Return the response
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body:       string(jsonResponse),
-        Headers: map[string]string{
-            "Access-Control-Allow-Origin": "https://reqinspect.com",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-        },
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
+			"Access-Control-Allow-Headers": "Content-Type",
+			"Access-Control-Allow-Methods": "POST, OPTIONS",
+		},
 	}, nil
 }
 
