@@ -39,7 +39,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 			StatusCode: 400,
 			Body:       "Expected multipart/form-data",
 			Headers: map[string]string{
-				"Access-Control-Allow-Origin":  "https://reqinspect.com",
+				"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
 				"Access-Control-Allow-Headers": "Content-Type",
 				"Access-Control-Allow-Methods": "POST, OPTIONS",
 			},
@@ -53,7 +53,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 			StatusCode: 400,
 			Body:       "Error parsing file content",
 			Headers: map[string]string{
-				"Access-Control-Allow-Origin":  "https://reqinspect.com",
+				"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
 				"Access-Control-Allow-Headers": "Content-Type",
 				"Access-Control-Allow-Methods": "POST, OPTIONS",
 			},
@@ -87,7 +87,7 @@ func HandleRequest(request events.APIGatewayProxyRequest) (events.APIGatewayProx
 		StatusCode: 200,
 		Body:       string(jsonResponse),
 		Headers: map[string]string{
-			"Access-Control-Allow-Origin":  "https://reqinspect.com",
+			"Access-Control-Allow-Origin":  "https://www.reqinspect.com",
 			"Access-Control-Allow-Headers": "Content-Type",
 			"Access-Control-Allow-Methods": "POST, OPTIONS",
 		},
