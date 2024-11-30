@@ -43,7 +43,7 @@ export default {
         formData.append("file", file);
         
         // Need to edit this when I get to it...
-        const response = await fetch("https://him02pp8qg.execute-api.us-east-1.amazonaws.com/", {
+        const response = await fetch("http://localhost:8080", {
           method: "POST",
           body: formData,
         });
