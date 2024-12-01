@@ -42,8 +42,7 @@ export default {
         const formData = new FormData();
         formData.append("file", file);
         
-        // Need to edit this when I get to it...
-        const response = await fetch("http://localhost:8080", {
+        const response = await fetch("api.reqinspect.com", {
           method: "POST",
           body: formData,
         });
