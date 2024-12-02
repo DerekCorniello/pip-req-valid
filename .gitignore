@@ -1,5 +1,3 @@
 /lib/main
 /lib/server
 /lib/*.zip
-
-.env
