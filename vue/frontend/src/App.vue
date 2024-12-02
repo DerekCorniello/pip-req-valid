@@ -22,7 +22,6 @@
             <h4>Environment Install Details:</h4>
             <div v-html="formatOutput(dockerDetails)"></div>
           </div>
-          <p>Note: This will fail if not all packages are verified!</p>
         </div>
       </div>
     </main>
@@ -48,21 +47,28 @@ export default {
       this.loading = true;
       this.output = null;
       this.dockerDetails = null;
-
+  
       try {
         const formData = new FormData();
         formData.append("file", file);
-
-        const response = await fetch("https://api.reqinspect.com", {
+          console.log(import.meta.env.VITE_API_URL) 
+          const response = await fetch(`${import.meta.env.VITE_API_URL}`, {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_AUTH_TOKEN}`,
+          },
           body: formData,
         });
-
+  
         if (response.ok) {
           const jsonResponse = await response.json();
           this.output = jsonResponse.prettyOutput;
-          this.dockerDetails = jsonResponse.installOutput;
+          this.dockerDetails = jsonResponse.details
+          if (jsonResponse.errors != "") {
+              this.dockerDetails += "\n\n" + errorResponse.errors;
+          } 
         } else {
+          const errorResponse = await response.json();
           this.output = "Error validating the file. Please try again.";
         }
       } catch (error) {
@@ -72,7 +78,7 @@ export default {
       }
     },
     formatOutput(text) {
-      return text.replace(/\n/g, "<br>");
+       return text.replace(/\n/g, "<br>");
     },
   },
 };
@@ -108,6 +114,7 @@ main {
 .output-container {
   margin-top: 2rem;
   min-height: 150px;
+  min-width: 300px;
 }
 
 .loading-spinner {

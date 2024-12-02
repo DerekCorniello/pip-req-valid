@@ -12,6 +12,7 @@ import (
 
 	"github.com/DerekCorniello/pip-req-valid/input"
 	"github.com/DerekCorniello/pip-req-valid/output"
+	"github.com/joho/godotenv"
 )
 
 func RunDockerInstall(requirements []byte) (string, error) {
@@ -38,19 +39,39 @@ func RunDockerInstall(requirements []byte) (string, error) {
 }
 
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
+	API_URL := os.Getenv("API_URL")
+	if API_URL == "" {
+		panic("No API URL Found!")
+	}
+	AUTH_TOKEN := os.Getenv("AUTH_TOKEN")
+	if AUTH_TOKEN == "" {
+		panic("No Auth Token found!")
+	}
+
 	// Set CORS headers
-    writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
-	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("Access-Control-Allow-Origin", API_URL)
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
-	// Handle preflight OPTIONS request
 	if reader.Method == http.MethodOptions {
 		writer.WriteHeader(http.StatusOK)
 		return
 	}
 
-	if reader.Method != http.MethodPost && reader.Method != http.MethodOptions {
+	if reader.Method != http.MethodPost {
 		http.Error(writer, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	authHeader := reader.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(writer, "Unauthorized: Missing or incorrect Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token != AUTH_TOKEN {
+		http.Error(writer, "Unauthorized: Invalid token", http.StatusUnauthorized)
 		return
 	}
 
@@ -120,6 +141,10 @@ func parseMultipartForm(r *http.Request) ([]byte, error) {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 	http.HandleFunc("/", handleRequest)
 	port := "8080"
 	log.Fatal(http.ListenAndServe(":"+port, nil))
