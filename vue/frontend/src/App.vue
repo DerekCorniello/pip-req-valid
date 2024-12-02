@@ -42,7 +42,7 @@ export default {
         const formData = new FormData();
         formData.append("file", file);
         
-        const response = await fetch("api.reqinspect.com", {
+        const response = await fetch("https://api.reqinspect.com", {
           method: "POST",
           body: formData,
         });

@@ -39,7 +39,7 @@ func RunDockerInstall(requirements []byte) (string, error) {
 
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-    writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+    writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
