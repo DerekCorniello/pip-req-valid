@@ -24,7 +24,7 @@ var jwtKey = []byte(os.Getenv("SECRET_TOKEN"))
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set the CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")  // Your frontend URL
+		w.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com") // Your frontend URL
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -33,8 +33,8 @@ func CORSMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-	next.ServeHTTP(w, r)
-																											})
+		next.ServeHTTP(w, r)
+	})
 }
 
 func RateLimitMiddleware(limiter *rate.Limiter, next http.Handler) http.Handler {
@@ -203,7 +203,7 @@ func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp": time.Now().Add(time.Second).Unix(), // Expires in 15 seconds
-		"iss": "api.reqinspect.com",                    // Issuer
+		"iss": "api.reqinspect.com",               // Issuer
 	})
 
 	signedToken, err := token.SignedString(jwtKey)
@@ -231,7 +231,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
 	}
-	limiter := rate.NewLimiter(rate.Every(time.Minute), 10)
+	limiter := rate.NewLimiter(rate.Every(3*time.Second), 100) // about 1000 req an hour, throttled to 100 req
 
 	http.Handle("/", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleRequest))))
 	http.Handle("/auth", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleAuth))))
