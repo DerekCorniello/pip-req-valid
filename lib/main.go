@@ -9,10 +9,16 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/DerekCorniello/pip-req-valid/input"
 	"github.com/DerekCorniello/pip-req-valid/output"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/joho/godotenv"
 )
+
+var jwtKey = []byte(os.Getenv("SECRET_TOKEN"))
 
 func RunDockerInstall(requirements []byte) (string, error) {
 	// save the file temporarily
@@ -37,9 +43,29 @@ func RunDockerInstall(requirements []byte) (string, error) {
 	return string(output), nil
 }
 
+func validateToken(tokenString string) (*jwt.Token, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, ok := token.Claims.(jwt.MapClaims)
+
+	if ok && token.Valid {
+		return token, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
+
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-    writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
@@ -51,6 +77,19 @@ func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 
 	if reader.Method != http.MethodPost && reader.Method != http.MethodOptions {
 		http.Error(writer, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	auth := reader.Header.Get("Authorization")
+
+	if !strings.HasPrefix(auth, "Bearer ") {
+		http.Error(writer, "Unauthenticated Request: Missing Bearer Token", http.StatusUnauthorized)
+		return
+	}
+	tokenString := auth[len("Bearer "):]
+	_, err := validateToken(tokenString)
+	if err != nil {
+		http.Error(writer, fmt.Sprintf("Unauthenticated Request: %s", err.Error()), http.StatusUnauthorized)
 		return
 	}
 
@@ -98,14 +137,14 @@ func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 	writer.Write(jsonResponse)
 }
 
-func parseMultipartForm(r *http.Request) ([]byte, error) {
+func parseMultipartForm(reader *http.Request) ([]byte, error) {
 	// Parse the multipart form
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit for the form data
+	err := reader.ParseMultipartForm(10 << 20) // 10 MB limit for the form data
 	if err != nil {
 		return nil, err
 	}
 
-	file, _, err := r.FormFile("file")
+	file, _, err := reader.FormFile("file")
 	if err != nil {
 		return nil, fmt.Errorf("no file found in form data")
 	}
@@ -119,8 +158,61 @@ func parseMultipartForm(r *http.Request) ([]byte, error) {
 	return fileContent, nil
 }
 
+func handleAuth(writer http.ResponseWriter, reader *http.Request) {
+	// Set CORS headers
+	writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+
+	// Handle preflight OPTIONS request
+	if reader.Method == http.MethodOptions {
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if reader.Method != http.MethodGet && reader.Method != http.MethodOptions {
+		http.Error(writer, "Only GET method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	contentType := reader.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		http.Error(writer, "Expected application/json data", http.StatusBadRequest)
+		return
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp": time.Now().Add(15 * time.Second).Unix(), // Expires in 15 seconds
+		"iss": "api.reqinspect.com",                    // Issuer
+	})
+
+	signedToken, err := token.SignedString(jwtKey)
+	if err != nil {
+		fmt.Println("Error signing token:", err)
+		return
+	}
+
+	jsonResponse := map[string]interface{}{
+		"token": signedToken,
+	}
+
+	responseData, err := json.Marshal(jsonResponse)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(responseData)
+}
+
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env!\n%v", err.Error())
+	}
 	http.HandleFunc("/", handleRequest)
+	http.HandleFunc("/auth/", handleAuth)
 	port := "8080"
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

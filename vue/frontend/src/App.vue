@@ -44,13 +44,38 @@ export default {
       loading: false,
       output: null,
       dockerDetails: null,
+      authToken: null, // Store the token
     };
   },
   methods: {
+    async getAuthToken() {
+      try {
+        const response = await fetch("https://api.reqinspect.com/auth", {
+          method: "POST",
+        });
+
+        if (response.ok) {
+          const jsonResponse = await response.json();
+          this.authToken = jsonResponse.token;
+        } else {
+          this.output = "Error obtaining authentication token.";
+        }
+      } catch (error) {
+        this.output = `An error occurred while obtaining the token: ${error.message}`;
+      }
+    },
+
     async handleFileSubmission(file) {
       this.loading = true;
       this.output = null;
       this.dockerDetails = null;
+      await this.getAuthToken();
+
+      if (!this.authToken) {
+        this.output = "Authentication failed. Cannot submit the file.";
+        this.loading = false;
+        return;
+      }
 
       try {
         const formData = new FormData();
@@ -58,6 +83,9 @@ export default {
 
         const response = await fetch("https://api.reqinspect.com", {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${this.authToken}`,
+          },
           body: formData,
         });
 
@@ -79,13 +107,13 @@ export default {
         this.loading = false;
       }
     },
+
     formatOutput(text) {
       return text.replace(/\n/g, "<br>");
     },
   },
 };
 </script>
-
 <style>
 body {
   margin: 0;

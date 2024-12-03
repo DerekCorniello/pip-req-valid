@@ -1,3 +1,8 @@
 /lib/main
 /lib/server
 /lib/*.zip
+/lib/.env
+
+.env
+*/.env
+*/*/.env
