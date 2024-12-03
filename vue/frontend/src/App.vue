@@ -70,9 +70,9 @@ export default {
         if (response.ok) {
           const jsonResponse = await response.json();
           this.authToken = jsonResponse.token;
-	} else if (response.status == 429) {
-	  this.output = "Server Rate Limit Exceeded, Please check back soon!"	
-	} else {
+        } else if (response.status == 429) {
+          this.output = "Server Rate Limit Exceeded, Please check back soon!"	
+        } else {
           this.output = "Error obtaining authentication token.";
         }
       } catch (error) {
@@ -87,7 +87,6 @@ export default {
       await this.getAuthToken();
 
       if (!this.authToken) {
-        this.output = "Authentication failed. Cannot submit the file.";
         this.loading = false;
         return;
       }
@@ -114,8 +113,8 @@ export default {
               ? jsonResponse.details + "\n" + jsonResponse.errors
               : jsonResponse.details || jsonResponse.errors || "No details found";
         } else if (response.status == 429) {
-	  this.output = "Server Rate Limit Exceeded, Please check back soon!"	
-	} else {
+          this.output = "Server Rate Limit Exceeded, Please check back soon!"	
+        } else {
           this.output = "Error obtaining authentication token.";
         }
 
