@@ -1,13 +1,55 @@
 <!DOCTYPE html>
-<html lang="">
-  <head>
+<html lang="en">
+
+<head>
+    <!-- Basic Meta Tags -->
     <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
-  </head>
-  <body>
+    <meta name="description" content="ReqInspect helps developers quickly validate pip requirements.txt files.">
+    <meta name="keywords" content="ReqInspect, pip, requirements.txt, Python, validation, dependency management">
+    <meta name="author" content="Derek Corniello">
+
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="ReqInspect - Validate your pip requirements.txt files in seconds!">
+    <meta property="og:description"
+        content="Quickly validate pip requirements.txt files with ReqInspect. Fast, easy, and reliable.">
+    <meta property="og:image" content="public/favicon.ico">
+    <meta property="og:url" content="https://reqinspect.com">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon -->
+    <link rel="icon" href="public/favicon.ico" type="image/x-icon">
+
+    <!-- Title -->
+    <title>ReqInspect - Validate your pip requirements.txt files in seconds!</title>
+
+    <!-- Additional SEO: Canonical URL -->
+    <link rel="canonical" href="https://reqinspect.com">
+</head>
+
+<body>
+    <!-- Main App -->
     <div id="app"></div>
+
+    <!-- Main Script -->
     <script type="module" src="/src/main.js"></script>
-  </body>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ReqInspect",
+      "url": "https://reqinspect.com",
+      "description": "Validate your pip requirements.txt files in seconds.",
+      "applicationCategory": "Developer Tools",
+      "operatingSystem": "all",
+      "author": {
+        "@type": "Individual",
+        "name": "Derek Corniello"
+      }
+    }
+    </script>
+</body>
+
 </html>
