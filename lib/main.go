@@ -65,8 +65,8 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "https://api.reqinspect.com")
-	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
 	// Handle preflight OPTIONS request
@@ -160,9 +160,9 @@ func parseMultipartForm(reader *http.Request) ([]byte, error) {
 
 func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "https://api.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 
 	// Handle preflight OPTIONS request
 	if reader.Method == http.MethodOptions {
