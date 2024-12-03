@@ -16,9 +16,36 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/joho/godotenv"
+	"golang.org/x/time/rate"
 )
 
 var jwtKey = []byte(os.Getenv("SECRET_TOKEN"))
+
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set the CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")  // Your frontend URL
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+	next.ServeHTTP(w, r)
+																											})
+}
+
+func RateLimitMiddleware(limiter *rate.Limiter, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 func RunDockerInstall(requirements []byte) (string, error) {
 	// save the file temporarily
@@ -204,8 +231,10 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
 	}
-	http.HandleFunc("/", handleRequest)
-	http.HandleFunc("/auth", handleAuth)
+	limiter := rate.NewLimiter(rate.Every(time.Hour), 1000)
+
+	http.Handle("/", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleRequest))))
+	http.Handle("/auth", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleAuth))))
 	port := "8080"
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -7,4 +7,5 @@ require (
 	github.com/aws/aws-lambda-go v1.47.0
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/joho/godotenv v1.5.1
+	golang.org/x/time v0.8.0
 )
