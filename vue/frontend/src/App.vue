@@ -31,6 +31,7 @@
 
 <script>
 import FileDrop from "./components/FileDrop.vue";
+import secret from '@aws-amplify/backend'
 
 export default {
   components: {
@@ -52,10 +53,21 @@ export default {
       try {
         const formData = new FormData();
         formData.append("file", file);
-
-        const response = await fetch("https://api.reqinspect.com", {
-          method: "POST",
-          body: formData,
+        let url = `${import.meta.env.VITE_API_URL}`
+        if (url == "") {
+            url = secret('VITE_API_URL')
+        }
+        console.log(url)
+        let auth = `${import.meta.env.VITE_AUTH_TOKEN}`
+        if (auth == "") {
+            auth = secret('VITE_AUTH_TOKEN')
+        }
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ` + auth,
+            },
+            body: formData,
         });
 
         if (response.ok) {
