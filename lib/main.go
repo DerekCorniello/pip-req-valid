@@ -231,7 +231,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
 	}
-	limiter := rate.NewLimiter(rate.Every(time.Hour), 1000)
+	limiter := rate.NewLimiter(rate.Every(time.Minute), 10)
 
 	http.Handle("/", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleRequest))))
 	http.Handle("/auth", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleAuth))))
