@@ -65,7 +65,7 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Origin", "https://api.reqinspect.com")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
@@ -160,7 +160,7 @@ func parseMultipartForm(reader *http.Request) ([]byte, error) {
 
 func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "api.reqinspect.com")
+	writer.Header().Set("Access-Control-Allow-Origin", "https://api.reqinspect.com")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
@@ -209,7 +209,7 @@ func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		panic("Error loading .env!\n%v", err.Error())
+		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
 	}
 	http.HandleFunc("/", handleRequest)
 	http.HandleFunc("/auth/", handleAuth)

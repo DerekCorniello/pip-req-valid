@@ -51,7 +51,7 @@ export default {
     async getAuthToken() {
       try {
         const response = await fetch("https://api.reqinspect.com/auth", {
-          method: "POST",
+          method: "GET",
         });
 
         if (response.ok) {
