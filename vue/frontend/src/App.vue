@@ -57,7 +57,9 @@ export default {
         if (response.ok) {
           const jsonResponse = await response.json();
           this.authToken = jsonResponse.token;
-        } else {
+	} else if (response.status == 429) {
+	  this.output = "Server Rate Limit Exceeded, Please check back soon!"	
+	} else {
           this.output = "Error obtaining authentication token.";
         }
       } catch (error) {
@@ -98,9 +100,12 @@ export default {
             jsonResponse.details && jsonResponse.errors
               ? jsonResponse.details + "\n" + jsonResponse.errors
               : jsonResponse.details || jsonResponse.errors || "No details found";
-        } else {
-          this.output = "Error validating the file. Please try again.";
+        } else if (response.status == 429) {
+	  this.output = "Server Rate Limit Exceeded, Please check back soon!"	
+	} else {
+          this.output = "Error obtaining authentication token.";
         }
+
       } catch (error) {
         this.output = `An error occurred: ${error.message}`;
       } finally {
