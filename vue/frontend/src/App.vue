@@ -7,22 +7,13 @@
       <FileDrop @file-submitted="handleFileSubmission" />
       <h4>How does it work?</h4>
       <p>The program will parse out your requirements file and access APIs to ensure the versions are good.
-        If your file's versions are verified, the program will pip install your requirements file in a separate
-        environment, ensuring that the requirements are all packaged together in your file. This process will take
-        a few minutes depending on how large your requirements file is.
-      </p>
+      If your file's versions are verified, the program will pip install your requirements file in a separate
+      environment, ensuring that the requirements are all packaged together in your file. This process will take
+      a few minutes depending on how large your requirements file is.</p>
       <div class="output-container">
         <div v-if="loading" class="loading-spinner"></div>
-        <div v-else>
-          <div v-if="output" class="output">
-            <h4>API Check Output:</h4>
-            <div v-html="formatOutput(output)"></div>
-          </div>
-          <div v-if="dockerDetails" class="output">
-            <h4>Environment Install Details:</h4>
-            <div v-html="formatOutput(dockerDetails)"></div>
-          </div>
-          <p>Note: This will fail if not all packages are verified!</p>
+        <div v-else-if="output" class="output">
+          {{ output }}
         </div>
       </div>
     </main>
@@ -41,39 +32,25 @@ export default {
     return {
       loading: false,
       output: null,
-      dockerDetails: null,
     };
   },
   methods: {
     async handleFileSubmission(file) {
       this.loading = true;
       this.output = null;
-      this.dockerDetails = null;
 
       try {
         const formData = new FormData();
         formData.append("file", file);
-        let url = `${import.meta.env.VITE_API_URL}`
-        if (url == "") {
-            url = secret('VITE_API_URL')
-        }
-        console.log(url)
-        let auth = `${import.meta.env.VITE_AUTH_TOKEN}`
-        if (auth == "") {
-            auth = secret('VITE_AUTH_TOKEN')
-        }
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ` + auth,
-            },
-            body: formData,
+        const response = await fetch("https://api.reqinspect.com", {
+          method: "POST",
+          body: formData,
         });
 
         if (response.ok) {
           const jsonResponse = await response.json();
           this.output = jsonResponse.prettyOutput;
-          this.dockerDetails = jsonResponse.installOutput;
+          this.details = jsonResponse.details;
         } else {
           this.output = "Error validating the file. Please try again.";
         }
@@ -82,9 +59,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    formatOutput(text) {
-      return text.replace(/\n/g, "<br>");
     },
   },
 };
@@ -147,6 +121,5 @@ main {
   border: 1px solid #333;
   border-radius: 8px;
   word-wrap: break-word;
-  margin-bottom: 1rem;
 }
 </style>
