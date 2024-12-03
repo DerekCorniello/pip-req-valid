@@ -161,7 +161,6 @@ func parseMultipartForm(reader *http.Request) ([]byte, error) {
 func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 	// Set CORS headers
 	writer.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")
-	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 
 	// Handle preflight OPTIONS request
@@ -175,14 +174,8 @@ func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 		return
 	}
 
-	contentType := reader.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "application/json") {
-		http.Error(writer, "Expected application/json data", http.StatusBadRequest)
-		return
-	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp": time.Now().Add(15 * time.Second).Unix(), // Expires in 15 seconds
+		"exp": time.Now().Add(time.Second).Unix(), // Expires in 15 seconds
 		"iss": "api.reqinspect.com",                    // Issuer
 	})
 
@@ -212,7 +205,7 @@ func main() {
 		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
 	}
 	http.HandleFunc("/", handleRequest)
-	http.HandleFunc("/auth/", handleAuth)
+	http.HandleFunc("/auth", handleAuth)
 	port := "8080"
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
