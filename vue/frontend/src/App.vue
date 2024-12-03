@@ -22,7 +22,6 @@
 
 <script>
 import FileDrop from "./components/FileDrop.vue";
-import secret from '@aws-amplify/backend'
 
 export default {
   components: {
