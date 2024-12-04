@@ -7,11 +7,28 @@
 
 # ReqInspect
 
-ReqInspect is an open-source application designed to simplify and streamline request inspection and debugging. It provides a full-stack solution with a **Vue.js** frontend and a **Go** backend, offering a responsive and powerful interface for inspecting HTTP requests and responses in real time.
+ReqInspect is an open-source application designed to simplify and streamline requirements.txt inspection and debugging. It provides a full-stack solution with a **Vue.js** frontend and a **Go** backend, offering a responsive and powerful interface for inspecting python requirements.txt file.
 
 ## Infrastructure Overview
 
 The ReqInspect application is designed to be robust, scalable, and secure. Here’s an outline of the infrastructure setup for deployment:
+
+## AWS Stack Used:
+
+<p align="center">
+  <img src="https://cdn.simpleicons.org/amazoniam" alt="IAM" height="40px" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://cdn.simpleicons.org/amazonec2" alt="EC2" height="40px" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://cdn.simpleicons.org/awselasticloadbalancing" alt="Elastic Load Balancer" height="40px" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://cdn.simpleicons.org/amazonroute53" alt="Route53" height="40px" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://cdn.simpleicons.org/awsamplify" alt="Amplify" height="40px" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://cdn.simpleicons.org/amazoncloudwatch" alt="Cloudwatch" height="40px" />
+</p>
+
 
 ### Frontend
 - **Framework**: Built with Vue.js for a modern, dynamic, and responsive user interface.
