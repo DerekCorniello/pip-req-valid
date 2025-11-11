@@ -62,31 +62,37 @@ export default {
   },
   methods: {
     async getAuthToken() {
+      console.log("Getting auth token");
       try {
-        const response = await fetch("https://api.reqinspect.com/auth", {
+        const response = await fetch("http://localhost:8080/auth", {
           method: "GET",
         });
+        console.log("Auth response status:", response.status);
 
         if (response.ok) {
           const jsonResponse = await response.json();
           this.authToken = jsonResponse.token;
+          console.log("Auth token obtained");
         } else if (response.status == 429) {
           this.output = "Server Rate Limit Exceeded, Please check back soon!"	
         } else {
           this.output = "Error obtaining authentication token.";
         }
       } catch (error) {
+        console.error("Auth error:", error);
         this.output = `An error occurred while obtaining the token: ${error.message}`;
       }
     },
 
     async handleFileSubmission(file) {
+      console.log("Handling file submission");
       this.loading = true;
       this.output = null;
       this.dockerDetails = null;
       await this.getAuthToken();
 
       if (!this.authToken) {
+        console.log("No auth token, stopping");
         this.loading = false;
         return;
       }
@@ -94,14 +100,17 @@ export default {
       try {
         const formData = new FormData();
         formData.append("file", file);
+        console.log("Sending POST request to backend");
 
-        const response = await fetch("https://api.reqinspect.com", {
+        const response = await fetch("http://localhost:8080/", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${this.authToken}`,
           },
           body: formData,
+          signal: AbortSignal.timeout(60000),
         });
+        console.log("POST response status:", response.status);
 
         if (response.ok) {
           const jsonResponse = await response.json();

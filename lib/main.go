@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,16 +21,36 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var jwtKey = []byte(os.Getenv("SECRET_TOKEN"))
+var jwtKey []byte
+
+func generateRandomKey() []byte {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		panic("Failed to generate random key")
+	}
+	return key
+}
+
+func init() {
+	token := os.Getenv("SECRET_TOKEN")
+	if token == "" {
+		jwtKey = generateRandomKey()
+	} else {
+		jwtKey = []byte(token)
+	}
+}
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("CORS middleware, method: %s, path: %s", r.Method, r.URL.Path)
 		// Set the CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com") // Your frontend URL
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {
+			log.Printf("Handling OPTIONS in middleware")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -48,8 +70,9 @@ func RateLimitMiddleware(limiter *rate.Limiter, next http.Handler) http.Handler 
 }
 
 func RunDockerInstall(requirements []byte) (string, error) {
+	log.Printf("Starting RunDockerInstall")
 	// save the file temporarily
-	tmpFile, err := os.CreateTemp("", "requirements-*.txt")
+	tmpFile, err := os.CreateTemp("/host_tmp", "requirements-*.txt")
 	if err != nil {
 		return "", fmt.Errorf("could not create temp file: %v", err)
 	}
@@ -60,11 +83,18 @@ func RunDockerInstall(requirements []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not write to temp file: %v", err)
 	}
+	tmpFile.Close()
 
-	cmd := exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/app/requirements.txt", tmpFile.Name()), "python:3.11-slim", "pip", "install", "--no-cache-dir", "-r", "/app/requirements.txt")
+	hostPath := strings.Replace(tmpFile.Name(), "/host_tmp", "/tmp", 1)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "docker", "run", "--rm", "-v", fmt.Sprintf("%s:/app/requirements.txt", hostPath), "my-python-git", "sh", "-c", "mkdir -p /app && pip install --progress-bar off --disable-pip-version-check --no-cache-dir --root-user-action ignore -r /app/requirements.txt")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("docker install failed: %v\n%s", err, string(output))
+		if err == context.DeadlineExceeded {
+			return "Pip install timed out after 30 seconds.", nil
+		}
+		return fmt.Sprintf("Pip install failed: %s", string(output)), nil
 	}
 
 	return string(output), nil
@@ -91,18 +121,25 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 }
 
 func handleRequest(writer http.ResponseWriter, reader *http.Request) {
+	log.Printf("Main request received, method: %s", reader.Method)
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")
+	origin := reader.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	writer.Header().Set("Access-Control-Allow-Origin", origin)
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
 	// Handle preflight OPTIONS request
 	if reader.Method == http.MethodOptions {
+		log.Printf("Handling OPTIONS for main request")
 		writer.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if reader.Method != http.MethodPost && reader.Method != http.MethodOptions {
+		log.Printf("Invalid method for main request: %s", reader.Method)
 		http.Error(writer, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -132,8 +169,10 @@ func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 		http.Error(writer, "Error parsing file content", http.StatusBadRequest)
 		return
 	}
+	log.Printf("Parsed multipart form, file size: %d", len(fileContent))
 
 	pkgs, errs := input.ParseFile(fileContent)
+	log.Printf("Parsed file, packages: %d, errors: %d", len(pkgs), len(errs))
 
 	errList := []string{}
 	for _, err := range errs {
@@ -156,12 +195,17 @@ func handleRequest(writer http.ResponseWriter, reader *http.Request) {
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
+		log.Printf("Failed to marshal JSON: %v", err)
 		http.Error(writer, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Sending response for main request")
+	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	writer.Write(jsonResponse)
+	if _, err := writer.Write(jsonResponse); err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 }
 
 func parseMultipartForm(reader *http.Request) ([]byte, error) {
@@ -186,17 +230,24 @@ func parseMultipartForm(reader *http.Request) ([]byte, error) {
 }
 
 func handleAuth(writer http.ResponseWriter, reader *http.Request) {
+	log.Printf("Auth request received, method: %s", reader.Method)
 	// Set CORS headers
-	writer.Header().Set("Access-Control-Allow-Origin", "https://www.reqinspect.com")
+	origin := reader.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	writer.Header().Set("Access-Control-Allow-Origin", origin)
 	writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 
 	// Handle preflight OPTIONS request
 	if reader.Method == http.MethodOptions {
+		log.Printf("Handling OPTIONS for auth")
 		writer.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if reader.Method != http.MethodGet && reader.Method != http.MethodOptions {
+		log.Printf("Invalid method for auth: %s", reader.Method)
 		http.Error(writer, "Only GET method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -222,19 +273,18 @@ func handleAuth(writer http.ResponseWriter, reader *http.Request) {
 		return
 	}
 
+	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	writer.Write(responseData)
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(fmt.Sprintf("Error loading .env!\n%v", err.Error()))
-	}
+	godotenv.Load() // Load .env if exists, otherwise use env vars
 	limiter := rate.NewLimiter(rate.Every(time.Minute), 10)
 
 	http.Handle("/", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleRequest))))
 	http.Handle("/auth", CORSMiddleware(RateLimitMiddleware(limiter, http.HandlerFunc(handleAuth))))
 	port := "8080"
+	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

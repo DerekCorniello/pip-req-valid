@@ -1,10 +1,14 @@
-// +build ignore
+//go:build ignore
+//go:build ignore
+
 package main
 
 import (
 	"fmt"
 	"log"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/DerekCorniello/pip-req-valid/input"
@@ -94,8 +98,12 @@ Testing chars found in req files:
 
 	contentType := "multipart/form-data; boundary=boundary"
 
+	// Create a test request
+	req := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", contentType)
+
 	// Simulate calling parseMultipartForm
-	fileContent, err := parseMultipartForm(body, contentType)
+	fileContent, err := parseMultipartForm(req)
 	if err != nil {
 		t.Errorf("Failed to parse multipart form: %v", err)
 	}
