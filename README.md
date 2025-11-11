@@ -9,11 +9,26 @@
 
 ReqInspect is an open-source application designed to simplify and streamline requirements.txt inspection and debugging. It provides a full-stack solution with a **Vue.js** frontend and a **Go** backend, offering a responsive and powerful interface for inspecting python requirements.txt file.
 
-## Infrastructure Overview
+**Note**: This application has been migrated from AWS infrastructure to run locally via Docker. The public URLs (reqinspect.com) are no longer reachable. Use the Docker setup below to run it on your local machine.
 
-The ReqInspect application is designed to be robust, scalable, and secure. Hereâ€™s an outline of the infrastructure setup for deployment:
+## Local Development
 
-## AWS Stack Used:
+To run ReqInspect locally using Docker:
+
+1. Ensure Docker and Docker Compose are installed.
+2. Clone the repository and navigate to the project directory.
+3. Build the custom Python image: `sudo docker build -f python-with-git.Dockerfile -t my-python-git .`
+4. Start the services: `sudo docker compose up --build`
+5. Access the application at `http://localhost:5173`
+
+The setup includes:
+- Vue.js frontend served via Nginx on port 5173
+- Go backend API on port 8080
+- Docker-in-Docker support for pip install testing
+
+## Previous Infrastructure (AWS - No Longer Active)
+
+The ReqInspect application was previously deployed on AWS with the following stack:
 
 <p align="center">
   <img src="https://cdn.simpleicons.org/amazoniam" alt="IAM" height="40px" />
@@ -47,7 +62,7 @@ The ReqInspect application is designed to be robust, scalable, and secure. Hereâ
     - Tokens ensure secure file uploads and authenticated API interactions.
 
 ### Networking & Security
-- **Domain**: The application is accessible through [reqinspect.com](https://reqinspect.com) and [www.reqinspect.com](https://www.reqinspect.com).
+- **Domain**: The application was **previously** accessible through [reqinspect.com](https://reqinspect.com) and [www.reqinspect.com](https://www.reqinspect.com). _These URLs are no longer active._
 - **Load Balancing**:
   - An **Application Load Balancer (ALB)** distributes incoming requests to the backend instances.
   - HTTPS termination occurs at the ALB to ensure end-to-end encryption.
